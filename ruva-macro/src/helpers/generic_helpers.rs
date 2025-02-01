@@ -25,16 +25,8 @@ pub fn add_aggregate_generic_defaults(generics: &mut Generics) {
 		.iter()
 		.filter_map(|param| {
 			if let GenericParam::Type(ty) = param {
-				let bounded_ty = Type::Path(TypePath {
-					qself: None,
-					path: ty.ident.clone().into(),
-				});
-				Some(WherePredicate::Type(PredicateType {
-					bounded_ty,
-					colon_token: Default::default(),
-					bounds: Punctuated::new(),
-					lifetimes: None,
-				}))
+				let bounded_ty = Type::Path(TypePath { qself: None, path: ty.ident.clone().into() });
+				Some(WherePredicate::Type(PredicateType { bounded_ty, colon_token: Default::default(), bounds: Punctuated::new(), lifetimes: None }))
 			} else {
 				None
 			}
