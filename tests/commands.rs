@@ -69,11 +69,7 @@ fn test_into_command_with_generic() {
 		t_field: T,
 	}
 
-	let command = SomeCommandBody::<i32> {
-		name: "migo".into(),
-		foo: 2,
-		t_field: 1,
-	};
+	let command = SomeCommandBody::<i32> { name: "migo".into(), foo: 2, t_field: 1 };
 	let serilaized = serde_json::to_string(&command).unwrap();
 	let deserialized: SomeCommandBody<i32> = serde_json::from_str::<SomeCommandBody<i32>>(&serilaized).unwrap();
 	assert_eq!(format!("{:?}", deserialized), "SomeCommandBody { name: \"migo\", foo: 2, t_field: 1 }".to_string());

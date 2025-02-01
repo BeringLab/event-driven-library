@@ -3,11 +3,7 @@ use syn::{parse_quote, punctuated::Punctuated, token::Comma, DataEnum, DeriveInp
 
 pub(crate) fn locate_crate_on_derive_macro(ast: &DeriveInput) -> Ident {
 	let crates = ast.attrs.iter().find(|x| x.path().is_ident("crates"));
-	let crates = if let Some(crates) = crates {
-		crates.parse_args::<syn::ExprPath>().unwrap().path.get_ident().expect("#[crates(...)] expects path.").to_string()
-	} else {
-		"ruva".to_owned()
-	};
+	let crates = if let Some(crates) = crates { crates.parse_args::<syn::ExprPath>().unwrap().path.get_ident().expect("#[crates(...)] expects path.").to_string() } else { "ruva".to_owned() };
 	syn::Ident::new(&crates, proc_macro2::Span::call_site())
 }
 
@@ -33,26 +29,16 @@ pub(crate) fn check_if_field_has_attribute(field: &Field, attribute_name: &str) 
 
 pub(crate) fn extract_field_names(ast: &DeriveInput) -> Vec<String> {
 	match &ast.data {
-		syn::Data::Struct(syn::DataStruct {
-			fields: syn::Fields::Named(fields), ..
-		}) => fields.named.iter().filter_map(|f| f.ident.as_ref().map(|ident| ident.to_string())).collect(),
+		syn::Data::Struct(syn::DataStruct { fields: syn::Fields::Named(fields), .. }) => fields.named.iter().filter_map(|f| f.ident.as_ref().map(|ident| ident.to_string())).collect(),
 		_ => panic!("Only Struct is supported"),
 	}
 }
 
 pub(crate) fn remove_fields_based_on_field_name(given_fields: &mut syn::FieldsNamed, fields_to_remove: impl Borrow<Vec<String>>) {
 	let fields_to_remove = fields_to_remove.borrow();
-	let new_fields: Punctuated<Field, Comma> = given_fields
-		.named
-		.iter()
-		.filter(|f| f.ident.as_ref().map_or(true, |ident| !fields_to_remove.contains(&ident.to_string())))
-		.cloned()
-		.collect();
+	let new_fields: Punctuated<Field, Comma> = given_fields.named.iter().filter(|f| f.ident.as_ref().map_or(true, |ident| !fields_to_remove.contains(&ident.to_string()))).cloned().collect();
 
-	*given_fields = FieldsNamed {
-		brace_token: syn::token::Brace::default(),
-		named: new_fields,
-	};
+	*given_fields = FieldsNamed { brace_token: syn::token::Brace::default(), named: new_fields };
 }
 
 pub(crate) fn skip_over_attributes(field: &mut Field, attribute_name: &str) -> bool {
@@ -63,9 +49,7 @@ pub(crate) fn skip_over_attributes(field: &mut Field, attribute_name: &str) -> b
 }
 pub(crate) fn skip_given_attribute(ast: &mut DeriveInput, attribute_name: &str) {
 	match &mut ast.data {
-		syn::Data::Struct(syn::DataStruct {
-			fields: syn::Fields::Named(fields), ..
-		}) => {
+		syn::Data::Struct(syn::DataStruct { fields: syn::Fields::Named(fields), .. }) => {
 			fields.named.iter_mut().for_each(|f| {
 				skip_over_attributes(f, attribute_name);
 			});

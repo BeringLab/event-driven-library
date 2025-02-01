@@ -5,21 +5,7 @@ use syn::{punctuated::Punctuated, token::Comma, FnArg, Ident, ImplItemFn, ItemFn
 #[allow(unused)]
 pub fn parse_handler(ast: ItemFn) -> TokenStream {
 	const OUTPUT_TYPE_NOT_VALID: &str = "#[handler] fn must have valid output type";
-	let ItemFn {
-		sig: Signature {
-			ident,
-			output: ReturnType::Type(_, var),
-			inputs,
-			generics,
-			asyncness,
-			..
-		},
-		block,
-		..
-	} = ast
-	else {
-		panic!("{}", OUTPUT_TYPE_NOT_VALID)
-	};
+	let ItemFn { sig: Signature { ident, output: ReturnType::Type(_, var), inputs, generics, asyncness, .. }, block, .. } = ast else { panic!("{}", OUTPUT_TYPE_NOT_VALID) };
 
 	if inputs.is_empty() {
 		panic!("There must be message argument!");

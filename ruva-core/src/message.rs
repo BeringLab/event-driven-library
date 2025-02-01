@@ -29,11 +29,7 @@ pub trait TEvent: Sync + Send + Downcast {
 
 	fn metadata(&self) -> EventMetadata {
 		let event_name = std::any::type_name::<Self>().split("::").last().unwrap();
-		EventMetadata {
-			aggregate_id: Default::default(),
-			aggregate_name: Default::default(),
-			topic: event_name.to_string(),
-		}
+		EventMetadata { aggregate_id: Default::default(), aggregate_name: Default::default(), topic: event_name.to_string() }
 	}
 	fn outbox(&self) -> OutBox {
 		let metadata = self.metadata();

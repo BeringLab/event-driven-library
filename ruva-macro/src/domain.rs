@@ -81,11 +81,7 @@ pub(crate) fn render_entity_token(input: TokenStream, attrs: TokenStream) -> Tok
 }
 
 pub(crate) fn set_entity_fields(input_data: &mut syn::Data, for_aggregate: bool) -> proc_macro2::TokenStream {
-	if let syn::Data::Struct(DataStruct {
-		fields: syn::Fields::Named(ref mut fields),
-		..
-	}) = input_data
-	{
+	if let syn::Data::Struct(DataStruct { fields: syn::Fields::Named(ref mut fields), .. }) = input_data {
 		fields.named.iter_mut().for_each(|f| {
 			skip_over_attributes(f, "adapter_ignore");
 		});
@@ -145,10 +141,7 @@ fn get_setters(data: &Data) -> proc_macro2::TokenStream {
 	for f in field_idents {
 		let ident = f.ident.unwrap();
 		let ty = f.ty.to_token_stream().to_string();
-		let code = format!(
-			"pub fn set_{}(&mut self, {}:impl core::convert::Into<{}>){{self.{}={}.into();self.is_updated=true}}",
-			ident, ident, ty, ident, ident
-		);
+		let code = format!("pub fn set_{}(&mut self, {}:impl core::convert::Into<{}>){{self.{}={}.into();self.is_updated=true}}", ident, ident, ty, ident, ident);
 		quotes.push(code);
 	}
 	let joined: proc_macro2::TokenStream = quotes.join(" ").parse().unwrap();
@@ -167,11 +160,7 @@ pub fn create_struct_adapter_quote(input: &DeriveInput, for_aggregate: bool) -> 
 
 	let mut fields_to_ignore: Vec<String> = vec![];
 
-	if let syn::Data::Struct(DataStruct {
-		fields: syn::Fields::Named(ref mut fields),
-		..
-	}) = &mut adapter_input.data
-	{
+	if let syn::Data::Struct(DataStruct { fields: syn::Fields::Named(ref mut fields), .. }) = &mut adapter_input.data {
 		fields.named.iter_mut().for_each(|f: &mut Field| {
 			if let Some(ignorable_field) = check_if_field_has_attribute(f, "adapter_ignore") {
 				// if the field's type is generic, skip over

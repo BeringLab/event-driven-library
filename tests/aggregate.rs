@@ -59,12 +59,7 @@ fn test_conversion() {
 		name: String,
 		foo: i32,
 	}
-	let aggregate = ConversionStruct {
-		name: "migo".into(),
-		foo: 2,
-		id: 1,
-		..Default::default()
-	};
+	let aggregate = ConversionStruct { name: "migo".into(), foo: 2, id: 1, ..Default::default() };
 	assert_eq!(aggregate.id, 1);
 	let converted_adapter = ConversionStructAdapter::from(aggregate);
 
@@ -114,12 +109,7 @@ fn test_generic_aggregate() {
 		}
 	}
 
-	let my_struct = MyStruct::<String> {
-		name: "migo".into(),
-		age: 2,
-		sub_type: "sub_type".into(),
-		..Default::default()
-	};
+	let my_struct = MyStruct::<String> { name: "migo".into(), age: 2, sub_type: "sub_type".into(), ..Default::default() };
 	assert_eq!(my_struct.do_something_with_string(), "sub_type");
 	assert_eq!(my_struct.name, "migo");
 	assert_eq!(my_struct.age, 2);
