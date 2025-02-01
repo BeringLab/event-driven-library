@@ -9,12 +9,10 @@ repository = "https://github.com/BeringLab/ruva"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-proc-macro=true
+proc-macro = true
 
 [dependencies]
-syn = {version="2", features=["full","derive"]}
+syn = { version = "2", features = ["full", "derive"] }
 quote = "1"
-proc-macro2="1"
+proc-macro2 = "1"
 regex = "1.10.6"
-
-

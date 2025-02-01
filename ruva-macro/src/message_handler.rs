@@ -14,10 +14,7 @@ fn raise_impl_counter(key: &str) {
 fn impl_generator(trait_info: &syn::Path, redeined_methods: &[String]) -> TokenStream2 {
 	(2..6)
 		.map(|order| {
-			let redefiend_methods = redeined_methods
-				.iter()
-				.map(|method| syn::parse_str::<syn::ItemFn>(method).expect("Error occurred while generating impl!"))
-				.collect::<Vec<_>>();
+			let redefiend_methods = redeined_methods.iter().map(|method| syn::parse_str::<syn::ItemFn>(method).expect("Error occurred while generating impl!")).collect::<Vec<_>>();
 
 			let idents: Vec<_> = (2..order + 1).map(|i| syn::Ident::new(&format!("D{}", i), proc_macro2::Span::call_site())).collect();
 
@@ -90,19 +87,7 @@ pub(crate) fn render_inject(input: TokenStream, _attrs: TokenStream) -> TokenStr
 }
 
 fn render_tuplified_dependencies(input: &ItemFn) -> FnArg {
-	let dependencies = input
-		.sig
-		.inputs
-		.iter()
-		.skip(1)
-		.flat_map(|arg| {
-			if let FnArg::Typed(pat_type) = arg {
-				Some((pat_type.pat.clone(), pat_type.ty.clone()))
-			} else {
-				None
-			}
-		})
-		.collect::<Vec<_>>();
+	let dependencies = input.sig.inputs.iter().skip(1).flat_map(|arg| if let FnArg::Typed(pat_type) = arg { Some((pat_type.pat.clone(), pat_type.ty.clone())) } else { None }).collect::<Vec<_>>();
 	let params = dependencies.iter().map(|(pat, _)| pat).collect::<Vec<_>>();
 	let types = dependencies.iter().map(|(_, ty)| ty).collect::<Vec<_>>();
 
@@ -151,12 +136,7 @@ fn render_proxy_handler(input: &ItemFn, tuple_dep: &FnArg) -> ItemFn {
 
 	// ! Optimization - change body so it internally calls original method
 	let original_name = &input.sig.ident;
-	let token = format!(
-		"{}({}){}",
-		original_name,
-		dedupled_args.iter().map(|d| d.to_string()).collect::<Vec<_>>().join(","),
-		if asyncness.is_some() { ".await" } else { "" }
-	);
+	let token = format!("{}({}){}", original_name, dedupled_args.iter().map(|d| d.to_string()).collect::<Vec<_>>().join(","), if asyncness.is_some() { ".await" } else { "" });
 
 	let expr = syn::parse_str::<syn::Expr>(&token).expect("Expression parsing failed!");
 

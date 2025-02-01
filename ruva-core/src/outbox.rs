@@ -15,14 +15,6 @@ pub struct OutBox {
 
 impl OutBox {
 	pub fn new(aggregate_id: String, aggregate_name: String, topic: String, state: String) -> Self {
-		Self {
-			id: *SnowFlake::generate(),
-			aggregate_id,
-			aggregate_name,
-			topic,
-			state,
-			processed: false,
-			create_dt: Default::default(),
-		}
+		Self { id: *SnowFlake::generate(), aggregate_id, aggregate_name, topic, state, processed: false, create_dt: Default::default() }
 	}
 }

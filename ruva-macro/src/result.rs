@@ -4,9 +4,7 @@ use syn::DeriveInput;
 use crate::utils::{find_enum_variant, locate_crate_on_derive_macro};
 
 pub(crate) fn render_response_token(ast: &DeriveInput) -> TokenStream {
-	let syn::Data::Enum(_data) = &ast.data else {
-		panic!("Only Enum type is supported by #[derive(ApplicationError)].")
-	};
+	let syn::Data::Enum(_data) = &ast.data else { panic!("Only Enum type is supported by #[derive(ApplicationError)].") };
 	let name = &ast.ident;
 	let crates = locate_crate_on_derive_macro(ast);
 
@@ -41,11 +39,7 @@ pub(crate) fn render_error_token(ast: &DeriveInput) -> TokenStream {
 			panic!("#[stop_sentinel] expects unit.")
 		}
 	}
-	let stop_sentinel = if let Some(stop_sentinel) = stop_sentinel {
-		stop_sentinel.ident.clone()
-	} else {
-		syn::Ident::new("StopSentinel", proc_macro2::Span::call_site())
-	};
+	let stop_sentinel = if let Some(stop_sentinel) = stop_sentinel { stop_sentinel.ident.clone() } else { syn::Ident::new("StopSentinel", proc_macro2::Span::call_site()) };
 
 	/* \#\[stop_sentinel_with_event\] */
 	let stop_sentinel_with_event = find_variant("stop_sentinel_with_event");
@@ -55,17 +49,10 @@ pub(crate) fn render_error_token(ast: &DeriveInput) -> TokenStream {
 			panic!("#[stop_sentinel_with_event] expects Field(TEvent).")
 		}
 	}
-	let stop_sentinel_with_event = if let Some(stop_sentinel_with_event) = stop_sentinel_with_event {
-		stop_sentinel_with_event.ident.clone()
-	} else {
-		syn::Ident::new("StopSentinelWithEvent", proc_macro2::Span::call_site())
-	};
-	let stop_sentinel_with_event_type = if let syn::Fields::Unnamed(field) = &data_enum
-		.variants
-		.iter()
-		.find(|x| x.ident == stop_sentinel_with_event)
-		.expect("#[stop_sentinel_with_event] and StopSentinelWithEvent field not found.")
-		.fields
+	let stop_sentinel_with_event =
+		if let Some(stop_sentinel_with_event) = stop_sentinel_with_event { stop_sentinel_with_event.ident.clone() } else { syn::Ident::new("StopSentinelWithEvent", proc_macro2::Span::call_site()) };
+	let stop_sentinel_with_event_type = if let syn::Fields::Unnamed(field) =
+		&data_enum.variants.iter().find(|x| x.ident == stop_sentinel_with_event).expect("#[stop_sentinel_with_event] and StopSentinelWithEvent field not found.").fields
 	{
 		if field.unnamed.len() == 1 {
 			field.unnamed[0].ty.clone()
@@ -84,11 +71,7 @@ pub(crate) fn render_error_token(ast: &DeriveInput) -> TokenStream {
 			panic!("#[database_error] expects Field(Box<AnyError>).")
 		}
 	}
-	let database_error = if let Some(database_error) = database_error {
-		database_error.ident.clone()
-	} else {
-		syn::Ident::new("DatabaseError", proc_macro2::Span::call_site())
-	};
+	let database_error = if let Some(database_error) = database_error { database_error.ident.clone() } else { syn::Ident::new("DatabaseError", proc_macro2::Span::call_site()) };
 
 	quote!(
 		impl #crates::ApplicationError for #name {}

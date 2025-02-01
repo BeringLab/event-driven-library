@@ -12,20 +12,11 @@ const COMMAND_CONSTRAINT: [&str; 4] = ["Send", "Sync", "'static", "std::fmt::Deb
 fn craete_into_statement_from_struct_command(original_name: &syn::Ident, body_derive: &mut DeriveInput, data_struct: DataStruct) -> proc_macro2::TokenStream {
 	let body_name = syn::Ident::new(&(original_name.to_string() + "Body"), original_name.span());
 
-	let DataStruct {
-		fields: Fields::Named(syn::FieldsNamed { named, brace_token }),
-		struct_token,
-		semi_token,
-	} = &data_struct
-	else {
+	let DataStruct { fields: Fields::Named(syn::FieldsNamed { named, brace_token }), struct_token, semi_token } = &data_struct else {
 		panic!("Only Struct Allowed!");
 	};
 
-	let input_required_values = named
-		.iter()
-		.filter(|f| get_attributes(f).into_iter().any(|ident| ident == *"required_input"))
-		.cloned()
-		.collect::<Punctuated<syn::Field, syn::token::Comma>>();
+	let input_required_values = named.iter().filter(|f| get_attributes(f).into_iter().any(|ident| ident == *"required_input")).cloned().collect::<Punctuated<syn::Field, syn::token::Comma>>();
 
 	let mut idents_in_vec: Vec<String> = vec![];
 	let mut types_in_vec: Vec<String> = vec![];
@@ -85,11 +76,7 @@ fn craete_into_statement_from_struct_command(original_name: &syn::Ident, body_de
 
 	// Convert the generics to a string
 	add_sync_trait_bounds(&mut body_derive.generics, &COMMAND_CONSTRAINT);
-	let generics = if body_derive.generics.params.is_empty() {
-		String::new()
-	} else {
-		format!("{}", body_derive.generics.to_token_stream())
-	};
+	let generics = if body_derive.generics.params.is_empty() { String::new() } else { format!("{}", body_derive.generics.to_token_stream()) };
 
 	// Convert the where clause to a string (if it exists)
 	let where_clause = match &body_derive.generics.where_clause {

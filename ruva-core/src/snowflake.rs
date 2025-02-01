@@ -83,10 +83,7 @@ impl NumericalUniqueIdGenerator {
 	fn ts_seq(&self) -> TimeStampSeq {
 		const MASKING: i64 = 0xFFF;
 		let ts_seq = self.ts_seq.load(Ordering::Relaxed);
-		TimeStampSeq {
-			ts: ts_seq >> 12,
-			seq: ts_seq & MASKING,
-		}
+		TimeStampSeq { ts: ts_seq >> 12, seq: ts_seq & MASKING }
 	}
 
 	/// Constructs a new `NumericalUniqueIdGenerator` using the specified epoch.
@@ -105,12 +102,7 @@ impl NumericalUniqueIdGenerator {
 		//TODO:limit the maximum of input args datacenter_id and machine_id
 		let timestamp = current_time_in_milli(epoch);
 
-		NumericalUniqueIdGenerator {
-			epoch,
-			datacenter_id,
-			machine_id,
-			ts_seq: AtomicI64::new(timestamp << 12),
-		}
+		NumericalUniqueIdGenerator { epoch, datacenter_id, machine_id, ts_seq: AtomicI64::new(timestamp << 12) }
 	}
 
 	/// within 64 bits:

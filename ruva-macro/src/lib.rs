@@ -16,7 +16,7 @@ mod result;
 mod utils;
 
 #[proc_macro_derive(TEvent, attributes(internally_notifiable, externally_notifiable, identifier))]
-pub fn message_derive(attr: TokenStream) -> TokenStream {
+pub fn derive_tevent(attr: TokenStream) -> TokenStream {
 	let mut ast: DeriveInput = syn::parse(attr.clone()).unwrap();
 	let externally_notifiable_event_req = extract_externally_notifiable_event_req(&mut ast);
 	let visibilities = render_event_visibility(&ast);
