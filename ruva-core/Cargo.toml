@@ -1,6 +1,6 @@
 [package]
 name = "ruva-core"
-version = "0.19.4"
+version = "0.20.0"
 edition = "2021"
 license = "MIT"
 description = "Rust Library For Event Driven TEvent Handling"
@@ -32,6 +32,7 @@ sqlx = {version="0.8.1" ,features = ["runtime-tokio-rustls",
     "json",
     "rust_decimal"],optional=true}
 backtrace = { version = "0.3.73", optional = true}
+utoipa = { version = "5", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.39.0", features = [ "macros","sync","rt","time","rt-multi-thread"] }
@@ -40,3 +41,4 @@ tokio = { version = "1.39.0", features = [ "macros","sync","rt","time","rt-multi
 backtrace = ["dep:backtrace"]
 tracing=[]
 sqlx-postgres = ["sqlx"]
+utoipa = ["dep:utoipa"]

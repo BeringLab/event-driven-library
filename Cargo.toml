@@ -1,6 +1,6 @@
 [package]
 name = "ruva"
-version = "0.19.4"
+version = "0.20.0"
 edition = "2021"
 license = "MIT"
 description = "Rust Library For Event Driven Message Handling"
@@ -10,17 +10,17 @@ repository = "https://github.com/BeringLab/ruva"
 
 
 [dependencies]
-ruva-core= {version="0.19.4", path="./ruva-core"}
+ruva-core= {version="0.20.0", path="./ruva-core"}
 ruva-macro= {version="0.19.4", path="./ruva-macro"}
 static_assertions="1.1.0"
-regex = "1.10.6"
+regex = "1.11.1"
+utoipa = { version = "5.2.0", optional = true }
 
 [dev-dependencies]
-serde = {version="1.0.179",features=["derive"]}
+serde = {version="1.0.214",features=["derive"]}
 
 [features]
 backtrace = ["ruva-core/backtrace"]
 tracing = ["ruva-core/tracing"]
 sqlx-postgres = ["ruva-core/sqlx-postgres"]
-
-
+utoipa = ["dep:utoipa", "ruva-core/utoipa"]

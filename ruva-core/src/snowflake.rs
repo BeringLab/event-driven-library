@@ -3,7 +3,7 @@
 
 use std::hint::spin_loop;
 use std::ops::Deref;
-use std::sync::atomic::{AtomicI16, AtomicI64, Ordering};
+use std::sync::atomic::{AtomicI64, Ordering};
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -21,12 +21,8 @@ pub struct NumericalUniqueIdGenerator {
 	pub datacenter_id: i32,
 	pub machine_id: i32,
 
-	/// Most important 41 bits make up the timestamp section. As timestamps grow with time, IDs are sortable by time.
-	/// Maximum timestamp that can be represented in 41 bits is 2^41 -1 = 2199023255551 give is around 69 years.
-	timestamp: AtomicI64,
-
-	/// Sequence number is 12 bits, give gives us 2^12 combinations. This field is 0 unless more than one ID is generated in a millisecond on the same server
-	sequence_num: AtomicI16,
+	/// Sequence number consists of 42 + 12 bits. 42 bits for timestamp and 12 bits for sequence number.
+	sequence_num: AtomicI64,
 }
 
 #[derive(Debug)]
@@ -70,10 +66,9 @@ impl NumericalUniqueIdGenerator {
 
 		NumericalUniqueIdGenerator {
 			epoch,
-			timestamp: AtomicI64::new(timestamp),
 			datacenter_id,
 			machine_id,
-			sequence_num: AtomicI16::new(0),
+			sequence_num: AtomicI64::new(timestamp << 12),
 		}
 	}
 
@@ -82,8 +77,8 @@ impl NumericalUniqueIdGenerator {
 	/// datacenter id takes 5 bits in the second place so left shift 17
 	/// machine id takes 5 bits in the third place so left shift 12
 	/// sequence number comes last.
-	fn get_snowflake(&self) -> i64 {
-		self.timestamp.load(Ordering::Relaxed) << 22 | ((self.datacenter_id << 17) as i64) | ((self.machine_id << 12) as i64) | (self.sequence_num.load(Ordering::Relaxed) as i64)
+	fn get_snowflake(&self, seq_num: i16, timestamp: i64) -> i64 {
+		timestamp << 22 | ((self.datacenter_id as i64) << 17) | ((self.machine_id as i64) << 12) | (seq_num as i64)
 	}
 
 	/// The basic guarantee time punctuality.
@@ -102,25 +97,37 @@ impl NumericalUniqueIdGenerator {
 	/// id_generator.generate();
 	/// ```
 	pub fn generate(&self) -> i64 {
-		self.sequence_num.store((self.sequence_num.load(Ordering::Relaxed) + 1) % 4096, Ordering::Relaxed);
+		const MAX_SEQUENCE: i64 = 4095;
 
-		let mut now_millis = current_time_in_milli(self.epoch);
+		loop {
+			let timestamp = current_time_in_milli(self.epoch);
+			let current = self.sequence_num.load(Ordering::Relaxed);
+			let last_ts = current >> 12;
+			let last_seq = current & 0xFFF;
 
-		// If the following is true, then check if sequence has been created 4092 times,
-		// and then busy wait until the next millisecond
-		// to prevent 'clock is moving backwards' situation.
-		if self.timestamp.load(Ordering::Relaxed) == now_millis {
-			// Maintenance `timestamp` for every 4096 ids generated.
-			if self.sequence_num.load(Ordering::Relaxed) == 0 {
-				now_millis = race_next_milli(self.timestamp.load(Ordering::Relaxed), self.epoch);
-				self.timestamp.store(now_millis, Ordering::Relaxed);
+			if last_ts > timestamp {
+				spin_loop();
+				continue;
 			}
-		} else {
-			self.timestamp.store(now_millis, Ordering::Relaxed);
-			self.sequence_num.store(0, Ordering::Relaxed);
-		}
 
-		self.get_snowflake()
+			let (new_ts, new_seq) = if last_ts == timestamp {
+				let next_seq = (last_seq.wrapping_add(1) & MAX_SEQUENCE) as i16;
+				if next_seq == 0 {
+					let next_ts = race_next_milli(timestamp, self.epoch);
+					(next_ts, 0)
+				} else {
+					(timestamp, next_seq)
+				}
+			} else {
+				(timestamp, 0)
+			};
+
+			let new_id = new_ts << 12 | new_seq as i64;
+			match self.sequence_num.compare_exchange(current, new_id, Ordering::Relaxed, Ordering::Relaxed) {
+				Ok(_) => return self.get_snowflake(new_seq, new_ts),
+				Err(_) => continue,
+			}
+		}
 	}
 }
 
@@ -216,6 +223,7 @@ static ID_GENERATOR: std::sync::LazyLock<NumericalUniqueIdGenerator> = std::sync
 });
 
 #[derive(Clone, Hash, PartialEq, Debug, Eq, Ord, PartialOrd, Copy, Default)]
+#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
 pub struct SnowFlake(pub i64);
 impl SnowFlake {
 	pub fn generate() -> Self {
@@ -319,20 +327,47 @@ impl Serialize for SnowFlake {
 fn test_generate() {
 	let id_generator = NumericalUniqueIdGenerator::new(1, 2);
 	let mut ids = Vec::with_capacity(10000);
+	let id_count = 100000;
 
 	for _ in 0..99 {
-		for _ in 0..10000 {
+		for _ in 0..id_count {
 			ids.push(id_generator.generate());
 		}
 
 		ids.sort();
 		ids.dedup();
 
-		assert_eq!(10000, ids.len());
+		assert_eq!(id_count, ids.len());
 
 		ids.clear();
 	}
 }
+
+#[test]
+fn test_concurrent_id_generation() {
+	use std::collections::HashSet;
+	use std::thread;
+	let thread_count = 20;
+	let id_count = 10000;
+
+	let mut handles = vec![];
+	for thread_id in 0..thread_count {
+		let handle = thread::spawn(move || {
+			let mut ids = HashSet::with_capacity(id_count);
+			for _ in 0..id_count {
+				let id = SnowFlake::generate();
+				let res = ids.insert(id);
+				assert!(res, "thread_id: {}, id already exists: {:b}", thread_id, id.0);
+			}
+			ids.len()
+		});
+		handles.push(handle);
+	}
+	for handle in handles {
+		handle.join().unwrap();
+	}
+}
+
 #[test]
 fn test_generate_not_sequential_value_when_sleep() {
 	let id_generator = NumericalUniqueIdGenerator::new(1, 2);
