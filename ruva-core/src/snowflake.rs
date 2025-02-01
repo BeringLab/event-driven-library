@@ -38,17 +38,22 @@ impl TimeStampSeq {
 
 	fn next_ts_seq(&self, current_ts: i64, epoch: SystemTime) -> Self {
 		const MAX_SEQUENCE: i64 = 4095;
-		if self.ts == current_ts {
+		let (ts, seq) = if self.ts == current_ts {
+			// If timestamp hasn't changed, increment sequence
 			let next_seq = self.seq.wrapping_add(1) & MAX_SEQUENCE;
+
+			// If sequence overflows, move to next millisecond
 			if next_seq == 0 {
 				let next_ts = race_next_milli(current_ts, epoch);
-				Self { ts: next_ts, seq: 0 }
+				(next_ts, 0)
 			} else {
-				Self { ts: current_ts, seq: next_seq }
+				(current_ts, next_seq)
 			}
 		} else {
-			Self { ts: current_ts, seq: 0 }
-		}
+			(current_ts, 0)
+		};
+
+		TimeStampSeq { ts, seq }
 	}
 }
 
